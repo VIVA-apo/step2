@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>칼로리 트래커</title>
+<style>
+:root {
+  --page-bg:#f2f4f8; --chat-bg:#fff; --header-bg:#fbfcfe; --border:#ececf0;
+  --text:#1c1c1e; --text-muted:#92939b; --bubble-bot:#f1f3f7; --bubble-user:#2f9bff;
+  --accent:#2f9bff; --accent-soft:#eaf5ff; --carb:#3ecf72; --protein:#ffb340; --fat:#c084fc;
+  --danger:#ff3b30; --shadow:0 18px 55px rgba(0,0,0,.16);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--page-bg);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard Variable",Pretendard,"Segoe UI",Roboto,"Malgun Gothic",sans-serif;-webkit-font-smoothing:antialiased;color:var(--text)}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.phone{width:100%;max-width:420px;height:100vh;height:100dvh;background:var(--chat-bg);display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow)}
+@media(min-width:480px){.phone{height:100dvh;max-height:860px;border-radius:28px;margin:20px 0}}
+
+/* onboarding */
+.chat-header{flex:none;display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--header-bg);border-bottom:1px solid var(--border)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:17px}
+.header-text{display:flex;flex-direction:column;line-height:1.25}.header-text strong{font-size:15px}.header-text span{font-size:12px;color:var(--text-muted)}
+.thread{flex:1;min-height:0;overflow-y:auto;padding:16px 14px 8px;display:flex;flex-direction:column;gap:8px}.thread::-webkit-scrollbar{width:0}
+.row{display:flex;width:100%;animation:rise .22s ease}.row.bot{justify-content:flex-start}.row.user{justify-content:flex-end}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.bubble{max-width:78%;padding:10px 14px;border-radius:18px;font-size:15px;line-height:1.42;word-break:keep-all}.row.bot .bubble{background:var(--bubble-bot);border-bottom-left-radius:5px}.row.user .bubble{background:var(--bubble-user);color:#fff;border-bottom-right-radius:5px}
+.typing .bubble{display:flex;gap:4px;align-items:center;padding:13px 16px}.typing .dot{width:6px;height:6px;border-radius:50%;background:#aeaeb2;animation:bounce 1.1s infinite ease-in-out}.typing .dot:nth-child(2){animation-delay:.15s}.typing .dot:nth-child(3){animation-delay:.3s}@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-4px);opacity:1}}
+.card-bubble{max-width:88%;background:var(--bubble-bot);border-radius:18px;border-bottom-left-radius:5px;padding:18px 16px}.result-ring-wrap{position:relative;width:132px;height:132px;margin:4px auto 14px}.result-ring{width:100%;height:100%;transform:rotate(-90deg)}.ring-bg{fill:none;stroke:#e4e7ee;stroke-width:11}.ring-fg{fill:none;stroke:var(--accent);stroke-width:11;stroke-linecap:round;stroke-dasharray:396;stroke-dashoffset:396;transition:stroke-dashoffset .9s ease}.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.ring-center span{font-size:22px;font-weight:800}.ring-center small{font-size:11px;color:var(--text-muted)}
+.macro-row{display:flex;justify-content:space-between;gap:6px;margin-bottom:12px}.macro{flex:1;font-size:11px;color:var(--text-muted);text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px}.macro b{color:var(--text);font-size:13px}.macro-dot{width:7px;height:7px;border-radius:50%}.macro-dot.carb{background:var(--carb)}.macro-dot.protein{background:var(--protein)}.macro-dot.fat{background:var(--fat)}
+.energy-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 12px}.energy-pill{background:#fff;border:1px solid rgba(0,0,0,.05);border-radius:12px;padding:9px 10px}.energy-pill span{display:block;font-size:10px;color:var(--text-muted);margin-bottom:2px}.energy-pill b{font-size:12px}
+.meal-row{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid rgba(0,0,0,.06);font-size:13px}.meal-row .meal-kcal{color:var(--text-muted)}
+.input-bar{flex:none;border-top:1px solid var(--border);background:var(--header-bg);padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom))}.input-row{display:flex;align-items:center;gap:8px}.input-row input{flex:1;border:1px solid var(--border);background:#fff;border-radius:20px;padding:10px 16px;font-size:15px;color:var(--text);outline:none;min-width:0}.input-row input:focus{border-color:var(--accent)}.unit-tag{flex:none;font-size:13px;color:var(--text-muted)}.send-btn{flex:none;width:36px;height:36px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center}.send-btn:disabled{opacity:.35;cursor:default}.error-msg{font-size:12px;color:var(--danger);padding:0 6px 6px}.chip-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.chip{padding:10px 18px;border-radius:20px;border:1.5px solid var(--accent);background:#fff;color:var(--accent);font-size:14px;font-weight:600}.chip:hover{background:var(--accent-soft)}.chip:active{transform:scale(.97)}.cta-row{display:flex}.cta-btn{flex:1;padding:13px;border:none;border-radius:20px;background:var(--accent);color:#fff;font-size:15px;font-weight:700}
+
+/* dashboard */
+.app-header{flex:none;display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;background:#fff}.app-title small{display:block;font-size:12px;color:var(--text-muted);margin-bottom:2px}.app-title strong{font-size:20px;letter-spacing:-.3px}.icon-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--text)}
+.dashboard{flex:1;overflow-y:auto;padding:0 16px 28px;background:#fff}.dashboard::-webkit-scrollbar{width:0}
+.date-nav{display:flex;align-items:center;justify-content:space-between;margin:2px 0 12px}.date-label{font-size:14px;font-weight:700}.date-arrow{border:none;background:transparent;font-size:20px;padding:6px 10px;color:#555}
+.summary-card{background:linear-gradient(145deg,#f8fbff,#edf6ff);border:1px solid #dfeeff;border-radius:24px;padding:18px;margin-bottom:14px}.summary-top{display:flex;align-items:center;gap:18px}.cal-ring{--progress:0deg;width:116px;height:116px;flex:none;border-radius:50%;background:conic-gradient(var(--accent) var(--progress),#dfe8f3 0);position:relative}.cal-ring:after{content:"";position:absolute;inset:11px;border-radius:50%;background:#f6faff}.cal-ring-center{position:absolute;z-index:2;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.cal-ring-center b{font-size:21px}.cal-ring-center span{font-size:10px;color:var(--text-muted);margin-top:2px}.remaining{min-width:0}.remaining .label{font-size:12px;color:var(--text-muted);margin-bottom:4px}.remaining .value{font-size:27px;font-weight:800;letter-spacing:-1px}.remaining .value small{font-size:12px;font-weight:600;color:var(--text-muted);letter-spacing:0}.remaining .sub{font-size:12px;color:#69717c;margin-top:5px;line-height:1.45}
+.energy-line{margin-top:15px;padding-top:13px;border-top:1px solid rgba(47,155,255,.12);display:flex;gap:10px;justify-content:space-between}.energy-stat{flex:1}.energy-stat span{display:block;color:var(--text-muted);font-size:10px}.energy-stat b{display:block;font-size:12px;margin-top:2px}
+.section-title{display:flex;align-items:center;justify-content:space-between;margin:18px 2px 9px}.section-title h2{font-size:16px;margin:0}.section-title span{font-size:11px;color:var(--text-muted)}
+.macro-card{border:1px solid var(--border);border-radius:18px;padding:14px;background:#fff}.macro-progress-item+.macro-progress-item{margin-top:12px}.macro-progress-head{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}.macro-progress-head span:last-child{color:var(--text-muted)}.progress-track{height:7px;background:#eef0f3;border-radius:99px;overflow:hidden}.progress-fill{height:100%;border-radius:99px;transition:width .25s ease}.progress-fill.carb{background:var(--carb)}.progress-fill.protein{background:var(--protein)}.progress-fill.fat{background:var(--fat)}
+.meal-card{border:1px solid var(--border);border-radius:18px;background:#fff;margin-bottom:10px;overflow:hidden}.meal-card-head{display:flex;align-items:center;justify-content:space-between;padding:13px 14px}.meal-title-wrap{display:flex;align-items:center;gap:9px}.meal-emoji{width:34px;height:34px;border-radius:11px;background:#f5f6f8;display:flex;align-items:center;justify-content:center}.meal-name{font-size:14px;font-weight:750}.meal-total{font-size:11px;color:var(--text-muted);margin-top:2px}.meal-add{border:none;background:var(--accent-soft);color:var(--accent);width:30px;height:30px;border-radius:50%;font-size:20px;line-height:1}.food-list{border-top:1px solid var(--border)}.food-item{display:flex;align-items:center;gap:9px;padding:10px 14px;border-bottom:1px solid #f2f2f4}.food-thumb{width:44px;height:44px;flex:none;border-radius:11px;object-fit:cover;background:#f1f3f5;border:1px solid var(--border)}.food-item:last-child{border-bottom:0}.food-main{flex:1;min-width:0}.food-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.food-meta{font-size:10px;color:var(--text-muted);margin-top:2px}.food-kcal{font-size:12px;font-weight:700}.delete-btn{border:none;background:transparent;color:#c0c0c5;font-size:18px;padding:2px 0 2px 6px}.empty-meal{padding:0 14px 12px;color:var(--text-muted);font-size:11px}.floating-add{position:sticky;bottom:12px;margin:18px auto 0;width:100%;border:none;border-radius:17px;background:var(--accent);color:white;font-weight:750;padding:14px 16px;box-shadow:0 8px 24px rgba(47,155,255,.28)}
+
+/* bottom sheet */
+.sheet-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.28);z-index:20;display:flex;align-items:flex-end;animation:fadeIn .18s ease}@keyframes fadeIn{from{opacity:0}to{opacity:1}}.sheet{width:100%;max-height:92%;overflow-y:auto;background:#fff;border-radius:24px 24px 0 0;padding:12px 16px max(18px,env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(0,0,0,.16);animation:sheetUp .22s ease}@keyframes sheetUp{from{transform:translateY(30px);opacity:.7}to{transform:translateY(0);opacity:1}}.sheet-handle{width:36px;height:4px;border-radius:99px;background:#dadce1;margin:0 auto 12px}.sheet-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.sheet-title h3{margin:0;font-size:17px}.sheet-close{border:none;background:transparent;font-size:24px;color:#777}.field{margin-bottom:12px}.field label{display:block;font-size:11px;color:var(--text-muted);margin:0 0 5px 4px}.field input,.field select{width:100%;border:1px solid var(--border);border-radius:13px;padding:11px 12px;background:#fff;color:var(--text);outline:none}.field input:focus,.field select:focus{border-color:var(--accent)}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sheet-save{width:100%;border:none;background:var(--accent);color:#fff;border-radius:14px;padding:13px;font-weight:750;margin-top:4px}.sheet-error{min-height:16px;color:var(--danger);font-size:11px;margin:0 4px 4px}.photo-section{margin:2px 0 12px}.photo-section-label{display:flex;align-items:center;justify-content:space-between;margin:0 4px 7px}.photo-section-label span:first-child{font-size:11px;color:var(--text-muted)}.photo-section-label span:last-child{font-size:10px;color:#b0b1b7}.photo-pickers{display:grid;grid-template-columns:1fr 1fr;gap:8px}.photo-pick-btn{border:1px solid var(--border);background:#f8f9fb;border-radius:13px;padding:11px 8px;font-size:12px;font-weight:650;color:#45484e}.photo-pick-btn:active{transform:scale(.98)}.photo-input{display:none}.photo-preview-wrap{display:none;position:relative;margin-top:9px;border-radius:15px;overflow:hidden;background:#f4f5f7;border:1px solid var(--border)}.photo-preview-wrap.show{display:block}.photo-preview{display:block;width:100%;height:150px;object-fit:cover}.photo-remove{position:absolute;top:8px;right:8px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(20,20,22,.72);color:#fff;font-size:18px;line-height:1}.photo-status{display:none;margin:7px 4px 0;font-size:11px;color:var(--text-muted)}.photo-status.show{display:block}.photo-note{font-size:10px;color:var(--text-muted);line-height:1.45;margin:7px 4px 0}.analysis-card{margin:10px 0 12px;padding:12px;border:1px solid #dcecff;background:#f7fbff;border-radius:14px}.analysis-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}.analysis-title strong{font-size:12px}.analysis-badge{font-size:10px;font-weight:750;padding:4px 7px;border-radius:99px;background:#e9eef5;color:#6e7480}.analysis-badge.working{background:#eaf5ff;color:var(--accent)}.analysis-badge.ok{background:#eafaf0;color:#168447}.analysis-badge.web{background:#fff5e6;color:#9a6500}.analysis-badge.manual{background:#fff0ef;color:#bd3d34}.analysis-message{font-size:11px;color:#626a76;line-height:1.5;word-break:keep-all}.analysis-sources{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.analysis-sources a{font-size:9px;color:var(--accent);text-decoration:none;background:#fff;border:1px solid #d9e9fb;border-radius:99px;padding:4px 7px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.db-hint{min-height:15px;font-size:10px;line-height:1.4;color:var(--text-muted);margin:-6px 4px 10px}.db-hint.found{color:#168447}.db-hint.searching{color:var(--accent)}.auto-filled{border-color:#8ad9a5!important;background:#fbfffc!important}.sheet-save:disabled{opacity:.5;cursor:default}
+.profile-popover{position:absolute;top:58px;right:12px;z-index:15;background:#fff;border:1px solid var(--border);border-radius:15px;padding:7px;box-shadow:0 10px 30px rgba(0,0,0,.12);min-width:170px}.profile-popover button{width:100%;text-align:left;border:none;background:transparent;padding:10px 11px;border-radius:10px;font-size:13px}.profile-popover button:hover{background:#f5f6f8}.profile-popover .danger{color:var(--danger)}
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <header class="chat-header">
+    <div class="avatar">🥗</div>
+    <div class="header-text"><strong>칼로리 트래커</strong><span id="header-status">입력 중…</span></div>
+  </header>
+  <div class="thread" id="thread"></div>
+  <div class="input-bar" id="input-bar"></div>
+</div>
+<script>
+const AUTO_ACTIVITY_RATE = 0.45; // 자동 활동량 = BMR의 45% (기존 활동계수 1.45와 같은 총소모량)
+const GOAL_ADJUST = { lose:-0.175, maintain:0, gain:0.125 };
+const MACRO_RATIO = {
+  lose:{carb:.40,protein:.35,fat:.25}, maintain:{carb:.45,protein:.25,fat:.30}, gain:{carb:.45,protein:.30,fat:.25}
+};
+const MEAL_RATIO = [
+  {key:"breakfast",label:"아침",emoji:"🌅",ratio:.25},
+  {key:"lunch",label:"점심",emoji:"☀️",ratio:.35},
+  {key:"dinner",label:"저녁",emoji:"🌙",ratio:.30},
+  {key:"snack",label:"간식",emoji:"🍎",ratio:.10}
+];
+const GOAL_LABEL={lose:"다이어트",maintain:"유지",gain:"벌크업"};
+const state={gender:null,age:null,height:null,weight:null,targetWeight:null,activityKcal:null,goal:null};
+let thread=document.getElementById("thread"), inputBar=document.getElementById("input-bar"), headerStatus=document.getElementById("header-status");
+
+function scrollToBottom(){if(thread)thread.scrollTop=thread.scrollHeight}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function clearInputBar(){if(inputBar)inputBar.innerHTML=""}
+function addUserMessage(text){const row=document.createElement("div");row.className="row user";row.innerHTML='<div class="bubble"></div>';row.querySelector(".bubble").textContent=text;thread.appendChild(row);scrollToBottom()}
+async function addBotMessage(text,{delay=480}={}){const typing=document.createElement("div");typing.className="row bot typing";typing.innerHTML='<div class="bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';thread.appendChild(typing);scrollToBottom();await sleep(delay);typing.remove();const row=document.createElement("div");row.className="row bot";row.innerHTML='<div class="bubble"></div>';row.querySelector(".bubble").textContent=text;thread.appendChild(row);scrollToBottom()}
+function addBotCard(html){const row=document.createElement("div");row.className="row bot";row.innerHTML=`<div class="card-bubble">${html}</div>`;thread.appendChild(row);scrollToBottom();return row}
+
+function askText({placeholder,unit,inputMode="numeric",validate,displayFormat}){return new Promise(resolve=>{clearInputBar();const wrap=document.createElement("div");wrap.innerHTML=`<div class="input-row"><input type="text" inputmode="${inputMode}" placeholder="${placeholder}" autocomplete="off"/>${unit?`<span class="unit-tag">${unit}</span>`:""}<button class="send-btn" type="button" disabled>↑</button></div><div class="error-msg" style="display:none"></div>`;inputBar.appendChild(wrap);const input=wrap.querySelector("input"),btn=wrap.querySelector(".send-btn"),error=wrap.querySelector(".error-msg");input.addEventListener("input",()=>{btn.disabled=input.value.trim()==="";error.style.display="none"});function submit(){const raw=input.value.trim();if(!raw)return;const result=validate?validate(raw):{ok:true,value:raw};if(result.ok!==true){error.textContent=result.message||"다시 입력해 주세요.";error.style.display="block";input.focus();return}addUserMessage(displayFormat?displayFormat(result.value):raw);clearInputBar();resolve(result.value)}btn.addEventListener("click",submit);input.addEventListener("keydown",e=>{if(e.key==="Enter")submit()});setTimeout(()=>input.focus(),100)})}
+function askChoice(options){return new Promise(resolve=>{clearInputBar();const wrap=document.createElement("div");wrap.className="chip-row";options.forEach(opt=>{const chip=document.createElement("button");chip.type="button";chip.className="chip";chip.textContent=opt.label;chip.addEventListener("click",()=>{addUserMessage(opt.label);clearInputBar();resolve(opt.value)});wrap.appendChild(chip)});inputBar.appendChild(wrap)})}
+function showCTA(label,onClick){clearInputBar();const wrap=document.createElement("div");wrap.className="cta-row";const btn=document.createElement("button");btn.className="cta-btn";btn.textContent=label;btn.addEventListener("click",onClick);wrap.appendChild(btn);inputBar.appendChild(wrap)}
+function numberValidator({min,max,isInt=true}){return raw=>{const n=Number(raw);if(Number.isNaN(n))return{ok:false,message:"숫자로 입력해 주세요."};if(isInt&&!Number.isInteger(n))return{ok:false,message:"정수로 입력해 주세요."};if(n<min||n>max)return{ok:false,message:`${min}~${max} 사이로 입력해 주세요.`};return{ok:true,value:n}}}
+
+function calcBMR({gender,weight,height,age}){const base=10*weight+6.25*height-5*age;return gender==="male"?base+5:base-161}
+function calculate(){const bmr=calcBMR(state);const activityKcal=Number.isFinite(state.activityKcal)?state.activityKcal:Math.round(bmr*AUTO_ACTIVITY_RATE);const tdee=bmr+activityKcal;const goalKcal=Math.round(tdee*(1+GOAL_ADJUST[state.goal]));const ratio=MACRO_RATIO[state.goal];const macros={carb:Math.round(goalKcal*ratio.carb/4),protein:Math.round(goalKcal*ratio.protein/4),fat:Math.round(goalKcal*ratio.fat/9)};return{bmr:Math.round(bmr),activityKcal:Math.round(activityKcal),tdee:Math.round(tdee),goalKcal,macros}}
+function renderResultCard({bmr,activityKcal,tdee,goalKcal,macros}){const meals=MEAL_RATIO.map(m=>`<div class="meal-row"><span>${m.label}</span><span class="meal-kcal">${Math.round(goalKcal*m.ratio).toLocaleString()} kcal</span></div>`).join("");const html=`<div class="result-ring-wrap"><svg class="result-ring" viewBox="0 0 140 140"><circle class="ring-bg" cx="70" cy="70" r="63"></circle><circle class="ring-fg" id="ring-fg" cx="70" cy="70" r="63"></circle></svg><div class="ring-center"><span>${goalKcal.toLocaleString()}</span><small>kcal / 일</small></div></div><div class="macro-row"><div class="macro"><span class="macro-dot carb"></span>탄수화물<b>${macros.carb}g</b></div><div class="macro"><span class="macro-dot protein"></span>단백질<b>${macros.protein}g</b></div><div class="macro"><span class="macro-dot fat"></span>지방<b>${macros.fat}g</b></div></div><div class="energy-breakdown"><div class="energy-pill"><span>기초대사량</span><b>${bmr.toLocaleString()} kcal</b></div><div class="energy-pill"><span>활동 소모량</span><b>${activityKcal.toLocaleString()} kcal</b></div><div class="energy-pill"><span>유지 필요량</span><b>${tdee.toLocaleString()} kcal</b></div><div class="energy-pill"><span>${GOAL_LABEL[state.goal]} 목표</span><b>${goalKcal.toLocaleString()} kcal</b></div></div>${meals}`;const row=addBotCard(html);requestAnimationFrame(()=>{const ring=row.querySelector("#ring-fg"),circ=396,filled=Math.min(goalKcal/3200,1);ring.style.strokeDashoffset=String(circ*(1-filled))})}
+function saveProfile(computed){const profile={...state,...computed,savedAt:new Date().toISOString()};localStorage.setItem("calorieTracker.profile",JSON.stringify(profile));return profile}
+
+function localDateKey(date=new Date()){const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,"0"),d=String(date.getDate()).padStart(2,"0");return `${y}-${m}-${d}`}
+function parseLocalDate(key){const [y,m,d]=key.split("-").map(Number);return new Date(y,m-1,d)}
+function formatDateLabel(key){const d=parseLocalDate(key);const today=localDateKey();const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);if(key===today)return "오늘";if(key===localDateKey(yesterday))return "어제";if(key===localDateKey(tomorrow))return "내일";return `${d.getMonth()+1}월 ${d.getDate()}일`}
+function logStorageKey(dateKey){return `calorieTracker.logs.${dateKey}`}
+function getLogs(dateKey){try{return JSON.parse(localStorage.getItem(logStorageKey(dateKey)))||[]}catch{return[]}}
+function setLogs(dateKey,logs){localStorage.setItem(logStorageKey(dateKey),JSON.stringify(logs))}
+function sumLogs(logs){return logs.reduce((a,x)=>({kcal:a.kcal+Number(x.kcal||0),carb:a.carb+Number(x.carb||0),protein:a.protein+Number(x.protein||0),fat:a.fat+Number(x.fat||0)}),{kcal:0,carb:0,protein:0,fat:0})}
+function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
+
+let activeDateKey=localDateKey();
+function renderDashboard(profile){
+  const phone=document.getElementById("phone");
+  phone.style.position="relative";
+  phone.innerHTML=`<header class="app-header"><div class="app-title"><small>${GOAL_LABEL[profile.goal]} 목표</small><strong>오늘의 기록</strong></div><button class="icon-btn" id="menu-btn" aria-label="메뉴">•••</button></header><main class="dashboard" id="dashboard"></main>`;
+  activeDateKey=localDateKey();
+  document.getElementById("menu-btn").addEventListener("click",toggleProfileMenu);
+  drawDashboard(profile);
+}
+function drawDashboard(profile){
+  const dashboard=document.getElementById("dashboard"); if(!dashboard)return;
+  const logs=getLogs(activeDateKey), total=sumLogs(logs), remain=profile.goalKcal-total.kcal, usedPct=clamp(total.kcal/profile.goalKcal*100,0,100);
+  const macroRows=[
+    ["탄수화물","carb",total.carb,profile.macros.carb],["단백질","protein",total.protein,profile.macros.protein],["지방","fat",total.fat,profile.macros.fat]
+  ].map(([label,key,val,target])=>`<div class="macro-progress-item"><div class="macro-progress-head"><span>${label}</span><span>${Math.round(val)} / ${target}g</span></div><div class="progress-track"><div class="progress-fill ${key}" style="width:${clamp(val/target*100,0,100)}%"></div></div></div>`).join("");
+  const mealCards=MEAL_RATIO.map(meal=>{const items=logs.filter(x=>x.meal===meal.key),mealTotal=sumLogs(items),target=Math.round(profile.goalKcal*meal.ratio);const list=items.length?`<div class="food-list">${items.map(x=>`<div class="food-item">${x.photo?`<img class="food-thumb" src="${escapeHtml(x.photo)}" alt="${escapeHtml(x.name)} 사진" />`:""}<div class="food-main"><div class="food-name">${escapeHtml(x.name)}</div><div class="food-meta">탄 ${Number(x.carb||0)}g · 단 ${Number(x.protein||0)}g · 지 ${Number(x.fat||0)}g${x.photo?" · 📷":""}</div></div><div class="food-kcal">${Number(x.kcal).toLocaleString()} kcal</div><button class="delete-btn" data-delete="${x.id}" aria-label="삭제">×</button></div>`).join("")}</div>`:`<div class="empty-meal">아직 기록이 없어요.</div>`;return `<section class="meal-card"><div class="meal-card-head"><div class="meal-title-wrap"><div class="meal-emoji">${meal.emoji}</div><div><div class="meal-name">${meal.label}</div><div class="meal-total">${Math.round(mealTotal.kcal).toLocaleString()} / ${target.toLocaleString()} kcal</div></div></div><button class="meal-add" data-add="${meal.key}" aria-label="${meal.label} 음식 추가">+</button></div>${list}</section>`}).join("");
+  dashboard.innerHTML=`<div class="date-nav"><button class="date-arrow" id="prev-day">‹</button><div class="date-label">${formatDateLabel(activeDateKey)}</div><button class="date-arrow" id="next-day">›</button></div><section class="summary-card"><div class="summary-top"><div class="cal-ring" style="--progress:${usedPct*3.6}deg"><div class="cal-ring-center"><b>${Math.round(total.kcal).toLocaleString()}</b><span>/ ${profile.goalKcal.toLocaleString()} kcal</span></div></div><div class="remaining"><div class="label">${remain>=0?"남은 칼로리":"초과 칼로리"}</div><div class="value">${Math.abs(Math.round(remain)).toLocaleString()} <small>kcal</small></div><div class="sub">현재 섭취량 ${Math.round(total.kcal).toLocaleString()} kcal<br>${GOAL_LABEL[profile.goal]} 목표 ${profile.goalKcal.toLocaleString()} kcal</div></div></div><div class="energy-line"><div class="energy-stat"><span>기초대사량</span><b>${profile.bmr.toLocaleString()} kcal</b></div><div class="energy-stat"><span>활동량</span><b>${profile.activityKcal.toLocaleString()} kcal</b></div><div class="energy-stat"><span>유지 필요량</span><b>${profile.tdee.toLocaleString()} kcal</b></div></div></section><div class="section-title"><h2>탄단지</h2><span>오늘 목표 대비</span></div><section class="macro-card">${macroRows}</section><div class="section-title"><h2>식사 기록</h2><span>끼니별 권장량 기준</span></div>${mealCards}<button class="floating-add" id="quick-add">+ 음식 추가</button>`;
+  dashboard.querySelector("#prev-day").addEventListener("click",()=>moveDate(-1,profile));dashboard.querySelector("#next-day").addEventListener("click",()=>moveDate(1,profile));dashboard.querySelectorAll("[data-add]").forEach(b=>b.addEventListener("click",()=>openFoodSheet(profile,b.dataset.add)));dashboard.querySelector("#quick-add").addEventListener("click",()=>openFoodSheet(profile,"lunch"));dashboard.querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>deleteFood(profile,b.dataset.delete)));
+}
+function moveDate(delta,profile){const d=parseLocalDate(activeDateKey);d.setDate(d.getDate()+delta);activeDateKey=localDateKey(d);drawDashboard(profile)}
+function deleteFood(profile,id){const logs=getLogs(activeDateKey).filter(x=>String(x.id)!==String(id));setLogs(activeDateKey,logs);drawDashboard(profile)}
+function escapeHtml(s){return String(s??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]))}
+function normalizeFoodName(name){return String(name||"").normalize("NFKC").trim().toLocaleLowerCase("ko-KR").replace(/\s+/g,"")}
+function localFoodDb(){try{return JSON.parse(localStorage.getItem("calorieTracker.foodDb"))||{}}catch{return{}}}
+function rememberFoodLocal(food){
+  if(!food||!food.name||!(Number(food.kcal)>0))return;
+  const key=normalizeFoodName(food.name);if(!key)return;
+  const db=localFoodDb();db[key]={name:String(food.name).trim(),servingDescription:String(food.servingDescription||""),kcal:round1(Number(food.kcal)),carb:round1(Number(food.carb||0)),protein:round1(Number(food.protein||0)),fat:round1(Number(food.fat||0)),sourceType:food.sourceType||"manual",updatedAt:new Date().toISOString()};
+  try{localStorage.setItem("calorieTracker.foodDb",JSON.stringify(db))}catch{}
+}
+function lookupFoodLocal(name){const key=normalizeFoodName(name);if(!key)return null;return localFoodDb()[key]||null}
+async function apiJson(url,options={}){
+  if(location.protocol==="file:")throw new Error("AI 기능은 server.js로 실행해야 합니다.");
+  const response=await fetch(url,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.message||`서버 오류 (${response.status})`);
+  return data;
+}
+async function lookupFoodDatabase(name){
+  const local=lookupFoodLocal(name);
+  if(location.protocol==="file:")return local;
+  try{
+    const data=await apiJson(`/api/foods/lookup?name=${encodeURIComponent(name)}`,{method:"GET",headers:{}});
+    if(data.found&&data.food){rememberFoodLocal(data.food);return data.food}
+  }catch(err){console.warn("food lookup failed",err)}
+  return local;
+}
+function nutritionSnapshot(backdrop){
+  const q=id=>backdrop.querySelector(id);return JSON.stringify({key:normalizeFoodName(q("#food-name").value),kcal:round1(Number(q("#food-kcal").value||0)),carb:round1(Number(q("#food-carb").value||0)),protein:round1(Number(q("#food-protein").value||0)),fat:round1(Number(q("#food-fat").value||0))})
+}
+function setAnalysisState(backdrop,{badge="대기",badgeClass="",message="",sources=[]}={}){
+  const badgeEl=backdrop.querySelector("#analysis-badge"),msgEl=backdrop.querySelector("#analysis-message"),sourceEl=backdrop.querySelector("#analysis-sources");
+  badgeEl.className=`analysis-badge ${badgeClass}`.trim();badgeEl.textContent=badge;msgEl.textContent=message;
+  sourceEl.innerHTML="";(sources||[]).slice(0,4).forEach((url,i)=>{try{const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener noreferrer";a.textContent=`근거 ${i+1} · ${new URL(url).hostname}`;sourceEl.appendChild(a)}catch{}})
+}
+function applyNutritionToForm(backdrop,food,{sourceType="database",message=""}={}){
+  const map=[["#food-name",food.name],["#food-kcal",Math.round(Number(food.kcal||0))],["#food-carb",round1(Number(food.carb||0))],["#food-protein",round1(Number(food.protein||0))],["#food-fat",round1(Number(food.fat||0))]];
+  backdrop._programmaticFill=true;
+  map.forEach(([sel,val])=>{const el=backdrop.querySelector(sel);el.value=val;el.classList.add("auto-filled")});
+  backdrop._programmaticFill=false;backdrop._nutritionSource=sourceType;backdrop._autoSnapshot=nutritionSnapshot(backdrop);
+  rememberFoodLocal({...food,sourceType});
+  const dbHint=backdrop.querySelector("#db-hint");
+  if(sourceType==="database"){dbHint.className="db-hint found";dbHint.textContent=`저장된 음식 정보 자동 입력${food.servingDescription?` · ${food.servingDescription}`:""}`}
+  else if(message){dbHint.className="db-hint found";dbHint.textContent=message}
+}
+function openFoodSheet(profile,defaultMeal="lunch"){
+  closeOverlays();
+  const phone=document.getElementById("phone"),backdrop=document.createElement("div");
+  backdrop.className="sheet-backdrop";backdrop.id="food-sheet";backdrop._photoDataUrl="";backdrop._nutritionSource="manual";backdrop._autoSnapshot="";backdrop._lookupSeq=0;
+  backdrop.innerHTML=`<div class="sheet" role="dialog" aria-modal="true"><div class="sheet-handle"></div><div class="sheet-title"><h3>음식 추가</h3><button class="sheet-close" aria-label="닫기">×</button></div><div class="field"><label>끼니</label><select id="food-meal">${MEAL_RATIO.map(m=>`<option value="${m.key}" ${m.key===defaultMeal?"selected":""}>${m.label}</option>`).join("")}</select></div><div class="photo-section"><div class="photo-section-label"><span>음식 사진</span><span>AI 자동 계산</span></div><div class="photo-pickers"><button type="button" class="photo-pick-btn" id="take-photo">📷 사진 촬영</button><button type="button" class="photo-pick-btn" id="choose-photo">🖼️ 앨범 선택</button></div><input class="photo-input" id="camera-input" type="file" accept="image/*" capture="environment" /><input class="photo-input" id="gallery-input" type="file" accept="image/*" /><div class="photo-preview-wrap" id="photo-preview-wrap"><img class="photo-preview" id="photo-preview" alt="선택한 음식 사진 미리보기" /><button type="button" class="photo-remove" id="photo-remove" aria-label="사진 삭제">×</button></div><div class="photo-status" id="photo-status">사진을 준비하는 중이에요…</div><div class="photo-note">사진을 올리면 AI가 먼저 인식합니다. 확신이 낮으면 웹에서 유사 음식·제품과 영양정보를 검색해 자동 계산합니다.</div></div><div class="analysis-card" id="analysis-card"><div class="analysis-title"><strong>✨ AI 음식 분석</strong><span class="analysis-badge" id="analysis-badge">대기</span></div><div class="analysis-message" id="analysis-message">사진을 선택하면 음식명, 칼로리와 탄수화물·단백질·지방을 자동으로 채웁니다.</div><div class="analysis-sources" id="analysis-sources"></div></div><div class="field"><label>음식 이름</label><input id="food-name" placeholder="예: 김치찌개" autocomplete="off" /></div><div class="db-hint" id="db-hint">저장된 음식명과 정확히 일치하면 영양정보를 자동으로 불러옵니다. 띄어쓰기는 구분하지 않습니다.</div><div class="field"><label>칼로리</label><input id="food-kcal" inputmode="decimal" placeholder="예: 450" /></div><div class="field-grid"><div class="field"><label>탄수화물(g)</label><input id="food-carb" inputmode="decimal" placeholder="0" /></div><div class="field"><label>단백질(g)</label><input id="food-protein" inputmode="decimal" placeholder="0" /></div><div class="field"><label>지방(g)</label><input id="food-fat" inputmode="decimal" placeholder="0" /></div></div><div class="sheet-error" id="sheet-error"></div><button class="sheet-save" id="food-save">기록 저장</button></div>`;
+  phone.appendChild(backdrop);
+  const cameraInput=backdrop.querySelector("#camera-input"),galleryInput=backdrop.querySelector("#gallery-input"),nameInput=backdrop.querySelector("#food-name");
+  backdrop.addEventListener("click",e=>{if(e.target===backdrop)backdrop.remove()});
+  backdrop.querySelector(".sheet-close").addEventListener("click",()=>backdrop.remove());
+  backdrop.querySelector("#take-photo").addEventListener("click",()=>{cameraInput.value="";cameraInput.click()});
+  backdrop.querySelector("#choose-photo").addEventListener("click",()=>{galleryInput.value="";galleryInput.click()});
+  cameraInput.addEventListener("change",()=>handleFoodPhoto(cameraInput.files&&cameraInput.files[0],backdrop));
+  galleryInput.addEventListener("change",()=>handleFoodPhoto(galleryInput.files&&galleryInput.files[0],backdrop));
+  backdrop.querySelector("#photo-remove").addEventListener("click",()=>removeFoodPhoto(backdrop));
+  backdrop.querySelector("#food-save").addEventListener("click",()=>saveFood(profile,backdrop));
+  let lookupTimer=null;
+  nameInput.addEventListener("input",()=>{
+    if(backdrop._programmaticFill)return;
+    nameInput.classList.remove("auto-filled");backdrop.querySelector("#db-hint").className="db-hint";backdrop.querySelector("#db-hint").textContent="저장된 음식 확인 중…";
+    clearTimeout(lookupTimer);const seq=++backdrop._lookupSeq;lookupTimer=setTimeout(async()=>{
+      const name=nameInput.value.trim();if(!name){backdrop.querySelector("#db-hint").textContent="저장된 음식명과 정확히 일치하면 영양정보를 자동으로 불러옵니다. 띄어쓰기는 구분하지 않습니다.";return}
+      backdrop.querySelector("#db-hint").className="db-hint searching";
+      const food=await lookupFoodDatabase(name);if(!backdrop.isConnected||seq!==backdrop._lookupSeq)return;
+      if(food){applyNutritionToForm(backdrop,food,{sourceType:"database"})}
+      else{backdrop.querySelector("#db-hint").className="db-hint";backdrop.querySelector("#db-hint").textContent="저장된 음식이 없습니다. 직접 입력 후 저장하면 다음부터 자동 입력됩니다."}
+    },420)
+  });
+  setTimeout(()=>nameInput.focus(),120);
+}
+async function handleFoodPhoto(file,backdrop){
+  if(!file)return;
+  const error=backdrop.querySelector("#sheet-error"),status=backdrop.querySelector("#photo-status"),saveBtn=backdrop.querySelector("#food-save");
+  error.textContent="";
+  if(!file.type||!file.type.startsWith("image/")){error.textContent="이미지 파일만 선택할 수 있어요.";return}
+  if(file.size>20*1024*1024){error.textContent="사진 파일이 너무 커요. 20MB 이하 이미지를 선택해 주세요.";return}
+  status.textContent="사진을 준비하는 중이에요…";status.classList.add("show");saveBtn.disabled=true;
+  setAnalysisState(backdrop,{badge:"준비 중",badgeClass:"working",message:"사진을 최적화하고 있습니다."});
+  try{
+    const dataUrl=await compressFoodPhoto(file);
+    backdrop._photoDataUrl=dataUrl;backdrop.querySelector("#photo-preview").src=dataUrl;backdrop.querySelector("#photo-preview-wrap").classList.add("show");
+    status.textContent="AI가 음식 사진을 분석 중이에요…";
+    setAnalysisState(backdrop,{badge:"분석 중",badgeClass:"working",message:"AI가 음식을 인식하고 있습니다. 확신이 낮으면 서버가 자동으로 웹 검색까지 진행합니다."});
+    const result=await analyzeFoodPhoto(dataUrl);
+    if(!backdrop.isConnected)return;
+    if(result.status==="recognized"||result.status==="searched"){
+      const sourceType=result.method==="web"?"web":"vision";
+      applyNutritionToForm(backdrop,{name:result.name,servingDescription:result.servingDescription,kcal:result.kcal,carb:result.carb,protein:result.protein,fat:result.fat},{sourceType,message:result.servingDescription?`사진 기준 ${result.servingDescription} 영양정보를 자동 입력했습니다.`:"사진 기준 영양정보를 자동 입력했습니다."});
+      const confidence=Math.round(Number(result.confidence||0)*100);
+      setAnalysisState(backdrop,{badge:result.status==="searched"?"웹 검증":"AI 인식",badgeClass:result.status==="searched"?"web":"ok",message:`${result.message||"영양정보를 계산했습니다."}${confidence?` · 신뢰도 ${confidence}%`:""}`,sources:result.sourceUrls||[]});
+      status.textContent=result.status==="searched"?"웹 검색까지 확인해 자동 입력했어요.":"AI 분석으로 자동 입력했어요.";
+    }else{
+      backdrop._nutritionSource="manual";backdrop._autoSnapshot="";
+      setAnalysisState(backdrop,{badge:"수기 입력",badgeClass:"manual",message:result.message||"AI 인식과 웹 검색으로도 확정하지 못했습니다. 아래 정보를 직접 입력해 주세요. 저장하면 다음부터 자동으로 불러옵니다.",sources:result.sourceUrls||[]});
+      status.textContent="자동 인식이 어려워 수기 입력이 필요해요.";
+    }
+  }catch(err){
+    console.error(err);backdrop._nutritionSource="manual";backdrop._autoSnapshot="";
+    setAnalysisState(backdrop,{badge:"수기 입력",badgeClass:"manual",message:`자동 분석을 완료하지 못했습니다. ${err.message||""} 직접 입력한 값은 저장 후 다음부터 자동으로 불러옵니다.`});
+    status.textContent="자동 분석을 완료하지 못했어요.";
+  }finally{if(backdrop.isConnected){saveBtn.disabled=false;setTimeout(()=>status.classList.remove("show"),1800)}}
+}
+async function analyzeFoodPhoto(dataUrl){
+  if(location.protocol==="file:")return{status:"manual_required",method:"none",confidence:0,message:"현재 파일을 직접 열어 실행 중이라 AI 서버에 연결할 수 없습니다. server.js로 실행한 뒤 사진 분석을 사용할 수 있습니다.",sourceUrls:[]};
+  return apiJson("/api/foods/analyze",{method:"POST",body:JSON.stringify({imageDataUrl:dataUrl})});
+}
+function removeFoodPhoto(backdrop){
+  backdrop._photoDataUrl="";const preview=backdrop.querySelector("#photo-preview");preview.removeAttribute("src");backdrop.querySelector("#photo-preview-wrap").classList.remove("show");backdrop.querySelector("#camera-input").value="";backdrop.querySelector("#gallery-input").value="";
+  setAnalysisState(backdrop,{badge:"대기",message:"사진을 선택하면 음식명, 칼로리와 탄수화물·단백질·지방을 자동으로 채웁니다."});
+}
+function compressFoodPhoto(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();reader.onerror=()=>reject(new Error("file read failed"));reader.onload=()=>{
+      const img=new Image();img.onerror=()=>reject(new Error("image decode failed"));img.onload=()=>{
+        const maxSide=1024,scale=Math.min(1,maxSide/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height));
+        const width=Math.max(1,Math.round((img.naturalWidth||img.width)*scale)),height=Math.max(1,Math.round((img.naturalHeight||img.height)*scale));
+        const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;const ctx=canvas.getContext("2d");ctx.drawImage(img,0,0,width,height);
+        let out=canvas.toDataURL("image/jpeg",.78);if(out.length>1500000)out=canvas.toDataURL("image/jpeg",.62);if(out.length>2200000)out=canvas.toDataURL("image/jpeg",.48);resolve(out)
+      };img.src=String(reader.result)
+    };reader.readAsDataURL(file)
+  })
+}
+async function persistManualFood(food){
+  rememberFoodLocal({...food,sourceType:"manual"});
+  if(location.protocol==="file:")return false;
+  try{await apiJson("/api/foods/manual",{method:"POST",body:JSON.stringify(food)});return true}catch(err){console.warn("manual food DB save failed",err);return false}
+}
+async function saveFood(profile,backdrop){
+  const q=id=>backdrop.querySelector(id),name=q("#food-name").value.trim(),kcal=Number(q("#food-kcal").value),carb=Number(q("#food-carb").value||0),protein=Number(q("#food-protein").value||0),fat=Number(q("#food-fat").value||0),meal=q("#food-meal").value,error=q("#sheet-error"),saveBtn=q("#food-save");
+  if(!name){error.textContent="음식 이름을 입력해 주세요.";return}
+  if(!Number.isFinite(kcal)||kcal<=0){error.textContent="칼로리를 0보다 큰 숫자로 입력해 주세요.";return}
+  if([carb,protein,fat].some(v=>!Number.isFinite(v)||v<0)){error.textContent="탄단지는 0 이상의 숫자로 입력해 주세요.";return}
+  error.textContent="";saveBtn.disabled=true;
+  const food={name,kcal:Math.round(kcal),carb:round1(carb),protein:round1(protein),fat:round1(fat)};
+  const currentSnapshot=nutritionSnapshot(backdrop),isUnchangedAuto=Boolean(backdrop._autoSnapshot&&currentSnapshot===backdrop._autoSnapshot);
+  if(!isUnchangedAuto)await persistManualFood(food);else rememberFoodLocal({...food,sourceType:backdrop._nutritionSource||"database"});
+  const logs=getLogs(activeDateKey);logs.push({id:Date.now()+Math.random().toString(16).slice(2),meal,...food,photo:backdrop._photoDataUrl||"",source:backdrop._nutritionSource||"manual",createdAt:new Date().toISOString()});
+  try{setLogs(activeDateKey,logs)}catch(err){console.error(err);error.textContent="사진 저장 공간이 부족해요. 사진을 삭제하거나 더 작은 사진으로 다시 시도해 주세요.";saveBtn.disabled=false;return}
+  backdrop.remove();drawDashboard(profile)
+}
+function round1(n){return Math.round(n*10)/10}
+function closeOverlays(){document.querySelectorAll(".sheet-backdrop,.profile-popover").forEach(el=>el.remove())}
+function toggleProfileMenu(){const existing=document.querySelector(".profile-popover");if(existing){existing.remove();return}const phone=document.getElementById("phone"),menu=document.createElement("div");menu.className="profile-popover";menu.innerHTML='<button id="menu-today">오늘로 이동</button><button id="menu-restart">프로필 다시 계산</button><button class="danger" id="menu-reset">모든 기록 초기화</button>';phone.appendChild(menu);menu.querySelector("#menu-today").onclick=()=>{activeDateKey=localDateKey();menu.remove();const p=JSON.parse(localStorage.getItem("calorieTracker.profile"));drawDashboard(p)};menu.querySelector("#menu-restart").onclick=()=>{localStorage.removeItem("calorieTracker.profile");location.reload()};menu.querySelector("#menu-reset").onclick=()=>{if(confirm("프로필과 모든 식사 기록을 삭제할까요?")){Object.keys(localStorage).filter(k=>k.startsWith("calorieTracker.")).forEach(k=>localStorage.removeItem(k));location.reload()}}}
+
+async function runFlow(){
+  await addBotMessage("안녕하세요 👋 시작 전에 몇 가지만 여쭤볼게요.");
+  await addBotMessage("성별이 어떻게 되세요?",{delay:400});
+  state.gender=await askChoice([{label:"여성",value:"female"},{label:"남성",value:"male"}]);
+  await addBotMessage("나이는 몇 세인가요?");state.age=await askText({placeholder:"예: 35",unit:"세",validate:numberValidator({min:10,max:100}),displayFormat:v=>`${v}세`});
+  await addBotMessage("키는 몇 cm예요?");state.height=await askText({placeholder:"예: 170",unit:"cm",validate:numberValidator({min:100,max:250}),displayFormat:v=>`${v}cm`});
+  await addBotMessage("현재 체중은요?");state.weight=await askText({placeholder:"예: 55",unit:"kg",inputMode:"decimal",validate:numberValidator({min:30,max:250,isInt:false}),displayFormat:v=>`${v}kg`});
+  await addBotMessage("목표 체중은 몇 kg으로 잡을까요?");state.targetWeight=await askText({placeholder:"예: 50",unit:"kg",inputMode:"decimal",validate:numberValidator({min:30,max:250,isInt:false}),displayFormat:v=>`${v}kg`});
+
+  const previewBmr=Math.round(calcBMR(state));
+  const autoActivity=Math.round(previewBmr*AUTO_ACTIVITY_RATE);
+  await addBotMessage(`기초대사량은 약 ${previewBmr.toLocaleString()} kcal예요. 활동량도 계수가 아니라 칼로리로 계산할게요.`);
+  await addBotMessage(`평균 활동 기준으로는 하루 약 ${autoActivity.toLocaleString()} kcal가 추가로 소모돼요. 그대로 쓸까요?`);
+  const activityChoice=await askChoice([{label:`자동 ${autoActivity.toLocaleString()} kcal`,value:"auto"},{label:"직접 입력할게요",value:"manual"}]);
+  if(activityChoice==="manual"){
+    await addBotMessage("하루 활동으로 추가 소모하는 칼로리를 입력해 주세요.");
+    state.activityKcal=await askText({placeholder:"예: 700",unit:"kcal / 일",inputMode:"decimal",validate:numberValidator({min:0,max:5000,isInt:false}),displayFormat:v=>`${v.toLocaleString()} kcal`});
+  }else state.activityKcal=autoActivity;
+
+  await addBotMessage("마지막으로, 목표가 뭐예요?");state.goal=await askChoice([{label:"다이어트",value:"lose"},{label:"유지",value:"maintain"},{label:"벌크업",value:"gain"}]);
+  headerStatus.textContent="계산 중…";await addBotMessage(`좋아요! ${GOAL_LABEL[state.goal]} 목표에 맞게 계산해볼게요.`,{delay:650});
+  const computed=calculate(),profile=saveProfile(computed);renderResultCard(computed);headerStatus.textContent="온라인";await sleep(350);await addBotMessage("오늘부터 이 기준으로 기록을 시작해봐요!",{delay:450});
+  showCTA("시작하기",()=>{addUserMessage("시작하기");clearInputBar();setTimeout(()=>renderDashboard(profile),180)});
+}
+runFlow().catch(err=>{console.error(err);clearInputBar();const row=document.createElement("div");row.className="row bot";row.innerHTML='<div class="bubble"></div>';row.querySelector(".bubble").textContent=`문제가 발생했어요: ${err.message||err}`;thread.appendChild(row)});
+</script>
+</body>
+</html>
